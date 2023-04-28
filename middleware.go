@@ -414,7 +414,7 @@ func (p *Prometheus) HandlerFunc() gin.HandlerFunc {
 		p.reqDur.WithLabelValues(p.serviceName, status, c.Request.Method, url).Add(elapsed)
 		p.reqCnt.WithLabelValues(p.serviceName, status, c.Request.Method, url).Inc()
 		p.reqSzTotal.WithLabelValues(p.serviceName, status, c.Request.Method, url).Add(float64(reqSz))
-		p.resSzTotal.WithLabelValues(p.serviceName, status, c.Request.Method, url).Add(float64(resSz))
+		p.resSzTotal.WithLabelValues(p.serviceName, status, c.Request.Method, url).Add(resSz)
 		p.reqSz.Observe(float64(reqSz))
 		p.resSz.Observe(resSz)
 	}
