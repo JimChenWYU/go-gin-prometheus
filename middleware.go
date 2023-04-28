@@ -42,17 +42,35 @@ var resSz = &Metric{
 	Description: "The HTTP response sizes in bytes.",
 	Type:        "summary"}
 
+var resSzTotal = &Metric{
+	ID:          "resSzTotal",
+	Name:        "response_size_bytes_total",
+	Description: "The HTTP response total sizes in bytes.",
+	Type:        "counter_vec",
+	Args:        []string{"service", "code", "method", "uri"},
+}
+
 var reqSz = &Metric{
 	ID:          "reqSz",
 	Name:        "request_size_bytes",
 	Description: "The HTTP request sizes in bytes.",
 	Type:        "summary"}
 
+var reqSzTotal = &Metric{
+	ID:          "reqSzTotal",
+	Name:        "request_size_bytes_total",
+	Description: "The HTTP request total sizes in bytes.",
+	Type:        "counter_vec",
+	Args:        []string{"service", "code", "method", "uri"},
+}
+
 var standardMetrics = []*Metric{
 	reqCnt,
 	reqDur,
 	resSz,
 	reqSz,
+	resSzTotal,
+	reqSzTotal,
 }
 
 /*
@@ -89,12 +107,13 @@ type Metric struct {
 
 // Prometheus contains the metrics gathered by the instance and its path
 type Prometheus struct {
-	reqCnt        *prometheus.CounterVec
-	reqDur        *prometheus.CounterVec
-	reqSz, resSz  prometheus.Summary
-	router        *gin.Engine
-	listenAddress string
-	Ppg           PrometheusPushGateway
+	reqCnt                 *prometheus.CounterVec
+	reqDur                 *prometheus.CounterVec
+	reqSz, resSz           prometheus.Summary
+	reqSzTotal, resSzTotal *prometheus.CounterVec
+	router                 *gin.Engine
+	listenAddress          string
+	Ppg                    PrometheusPushGateway
 
 	MetricsList []*Metric
 	MetricsPath string
@@ -345,6 +364,10 @@ func (p *Prometheus) registerMetrics(subsystem string) {
 			p.resSz = metric.(prometheus.Summary)
 		case reqSz:
 			p.reqSz = metric.(prometheus.Summary)
+		case resSzTotal:
+			p.resSzTotal = metric.(*prometheus.CounterVec)
+		case reqSzTotal:
+			p.reqSzTotal = metric.(*prometheus.CounterVec)
 		}
 		metricDef.MetricCollector = metric
 	}
@@ -377,7 +400,7 @@ func (p *Prometheus) HandlerFunc() gin.HandlerFunc {
 
 		status := strconv.Itoa(c.Writer.Status())
 		elapsed := float64(time.Since(start)) / float64(time.Second)
-        resSz := float64(c.Writer.Size())
+		resSz := float64(c.Writer.Size())
 
 		url := p.ReqCntURLLabelMappingFn(c)
 		// jlambert Oct 2018 - sidecar specific mod
@@ -390,6 +413,8 @@ func (p *Prometheus) HandlerFunc() gin.HandlerFunc {
 		}
 		p.reqDur.WithLabelValues(p.serviceName, status, c.Request.Method, url).Add(elapsed)
 		p.reqCnt.WithLabelValues(p.serviceName, status, c.Request.Method, url).Inc()
+		p.reqSzTotal.WithLabelValues(p.serviceName, status, c.Request.Method, url).Add(float64(reqSz))
+		p.resSzTotal.WithLabelValues(p.serviceName, status, c.Request.Method, url).Add(float64(resSz))
 		p.reqSz.Observe(float64(reqSz))
 		p.resSz.Observe(resSz)
 	}
