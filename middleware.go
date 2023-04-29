@@ -45,7 +45,7 @@ var resSz = &Metric{
 var resSzTotal = &Metric{
 	ID:          "resSzTotal",
 	Name:        "response_size_bytes_total",
-	Description: "The HTTP response total sizes in bytes.",
+	Description: "The HTTP response sizes in bytes.",
 	Type:        "counter_vec",
 	Args:        []string{"service", "code", "method", "uri"},
 }
@@ -59,7 +59,7 @@ var reqSz = &Metric{
 var reqSzTotal = &Metric{
 	ID:          "reqSzTotal",
 	Name:        "request_size_bytes_total",
-	Description: "The HTTP request total sizes in bytes.",
+	Description: "The HTTP request sizes in bytes.",
 	Type:        "counter_vec",
 	Args:        []string{"service", "code", "method", "uri"},
 }
@@ -342,6 +342,10 @@ func NewMetric(m *Metric, subsystem string) prometheus.Collector {
 				Subsystem: subsystem,
 				Name:      m.Name,
 				Help:      m.Description,
+				Objectives: map[float64]float64{
+					0.5: 0.05, // 第50个百分位数，最大绝对误差为0.05。
+					0.9: 0.01, // 第90个百分位数，最大绝对误差为0.01。
+				},
 			},
 		)
 	}
