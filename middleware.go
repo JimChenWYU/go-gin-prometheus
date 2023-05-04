@@ -342,9 +342,11 @@ func NewMetric(m *Metric, subsystem string) prometheus.Collector {
 				Subsystem: subsystem,
 				Name:      m.Name,
 				Help:      m.Description,
+				// If Objectives[q] = e, then the value reported for q
+				// will be the φ-quantile value for some φ between q-e and q+e.
 				Objectives: map[float64]float64{
-					0.5: 0.05, // 第50个百分位数，最大绝对误差为0.05。
-					0.9: 0.01, // 第90个百分位数，最大绝对误差为0.01。
+					0.5: 0.05,
+					0.9: 0.01,
 				},
 			},
 		)
